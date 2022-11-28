@@ -1,0 +1,46 @@
+version: v1.0
+
+name: Test
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2004
+
+global_job_config:
+  secrets:
+    - name: ACCESS_TOKENS
+
+  prologue:
+    commands:
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USERNAME" --password-stdin
+
+  env_vars:
+    - name: DOCKER_USERNAME
+      value: sineverba
+    - name: DOCKER_IMAGE
+      value: php74xc
+
+blocks:
+  - name: "Test"
+    skip:
+      when: "tag =~ '.*'"
+    task:
+      jobs:
+        - name: "Build and test"
+          commands:
+            - checkout
+            - docker build --tag $DOCKER_USERNAME/$DOCKER_IMAGE .
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -v | grep 7.4.29
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -v | grep OPcache
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -m | grep xdebug
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -r "xdebug_info();" | grep "3.1.4"
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -m | grep pdo_pgsql
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE /usr/bin/composer -V | grep "1.10.26"
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -i | grep "short_open_tag => Off => Off"
+            - docker run --rm $DOCKER_USERNAME/$DOCKER_IMAGE php -i | grep "memory_limit => 512M => 512M"
+
+promotions:
+  - name: Deploy
+    pipeline_file: build-deploy.yml
+    auto_promote:
+      when: "result = 'passed' and tag =~ '.*'"
