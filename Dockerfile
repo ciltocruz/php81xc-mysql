@@ -1,4 +1,4 @@
-FROM php:8.1.12-cli
+FROM php:8.4-cli
 
 # OpCache settings
 ENV PHP_OPCACHE_VALIDATE_TIMESTAMPS="0"
@@ -8,7 +8,6 @@ ENV XDEBUG_MODE="debug,coverage"
 RUN apt-get update -y && apt-get install -y \
     git \
     curl \
-    libmcrypt-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -26,11 +25,11 @@ RUN apt-get update -y && apt-get install -y \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Setup PHPXDebug
-RUN pecl install xdebug-3.1.6 mcrypt-1.0.5
+RUN pecl install xdebug-3.4.3
 
 # Install PHP extensions
 RUN docker-php-ext-install intl mysqli pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd opcache zip \
-    && docker-php-ext-enable mysqli pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd xdebug mcrypt
+    && docker-php-ext-enable mysqli pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd xdebug
 
 # Get latest Composer
 COPY --from=composer:1.10.26 /usr/bin/composer /usr/bin/composer
